@@ -1,10 +1,14 @@
 import pandas as pd
 import emoji
 from wordcloud import WordCloud, STOPWORDS
+import matplotlib, mplcairo
+matplotlib.use("module://mplcairo.macosx")
 import matplotlib.pyplot as plt
 from collections import Counter
+from matplotlib.font_manager import FontProperties
 
 # --- Load data and extract emojis ---
+prop = FontProperties(fname='/System/Library/Fonts/Apple Color Emoji.ttc')
 df = pd.read_csv("../movie_data/reddit-amazon-emoji-only.csv")
 
 # --- Extract emojis from 'title_y' and 'text' ---
@@ -17,9 +21,6 @@ df["emoji_list"] = (
 
 all_emojis = df["emoji_list"].explode()
 top5_emojis = Counter(all_emojis).most_common(5)
-
-# --- Step 2: Generate word clouds ---
-from wordcloud import WordCloud, STOPWORDS
 
 custom_stopwords = STOPWORDS.union({"br", "movie"})
 
@@ -41,11 +42,14 @@ for ax, (emoji_char, _) in zip(axes, top5_emojis):
     wc = generate_wordcloud(text)
 
     ax.imshow(wc, interpolation="bilinear")
-    ax.set_title(emoji_char, fontsize=20)
+    ax.set_title(emoji_char, fontsize=20, fontproperties=prop)
     ax.axis("off")
 
+# for label in ax.get_yticklabels():
+#     label.set_fontproperties(prop)
+#     label.set_fontsize(14)  # optional
 plt.tight_layout()
-plt.show()
+plt.savefig('movie_word_clouds', dpi=300)
 
 # # --- Use 'cleaned_text' for word cloud content ---
 # def plot_emoji_wordcloud(target_emoji):

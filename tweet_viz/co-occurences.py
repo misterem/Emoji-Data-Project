@@ -113,9 +113,10 @@ reduced = matrix.loc[top_emojis, top_emojis]
 logged = np.log1p(reduced)
 normed = (logged - logged.min().min()) / (logged.max().max() - logged.min().min())
 # Plot
-sns.heatmap(normed, cmap="Reds", square=True, linewidths=0.5, annot=reduced, fmt="d", annot_kws={"size": 8})
+sns.heatmap(normed, cmap="Reds", square=True, linewidths=0.5, annot=reduced, fmt="d", annot_kws={"size": 4})
 plt.title("Top 20 Emoji Co-occurrence Heatmap")
 plt.xticks(fontproperties=prop)
 plt.yticks(fontproperties=prop)
 plt.tight_layout()
-plt.show()
+# plt.show()
+plt.savefig('tweet_co-occurrences', dpi=300)
