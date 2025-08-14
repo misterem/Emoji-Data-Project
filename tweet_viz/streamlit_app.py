@@ -20,7 +20,7 @@ def _ensure_nlp_data():
         ("corpora/omw-1.4", "omw-1.4"),
         ("corpora/stopwords", "stopwords"),
         ("corpora/brown", "brown"),
-        ("corpora/wordlists", "wordlists"),
+        ("corpora/words", "words"),
         ("corpora/movie_reviews", "movie_reviews"),
         ("corpora/subjectivity", "subjectivity"),
     ]
@@ -29,6 +29,12 @@ def _ensure_nlp_data():
             nltk.data.find(key)
         except LookupError:
             nltk.download(pkg, download_dir=str(data_dir), quiet=True)
+
+    try:
+        from textblob import download_corpora as _tb_dl
+        _tb_dl.download_lite()  # or _tb_dl.download_all() if you prefer the full set
+    except Exception:
+        pass
 
 _ensure_nlp_data()
 import streamlit as st
