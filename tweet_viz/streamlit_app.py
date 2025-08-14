@@ -35,6 +35,18 @@ st.sidebar.caption(f"Active rows: {st.session_state.active_n_rows or '—'}")
 def load_or_build_profiles(_n_rows: int, _cache_path: Path):
     return get_profiles(Path(DATA_DIR), n_rows=_n_rows, text_col=TEXT_COL, cache_path=_cache_path)
 
+
+def diagnose_data_dir(dir_path: Path) -> str:
+    dir_path = Path(dir_path)
+    lines = [f"path: {dir_path.resolve()}", f"exists: {dir_path.exists()}"]
+    if dir_path.exists():
+        files = sorted([p.name for p in dir_path.glob('*.csv')])
+        lines.append(f"csv_count: {len(files)}")
+        preview = files[:15]
+        lines.extend([f"- {name}" for name in preview])
+        if len(files) > len(preview):
+            lines.append(f"... (+{len(files)-len(preview)} more)")
+    return "\n".join(lines)
 # ---------- Build Trigger ----------
 if build:
     try:
@@ -45,6 +57,8 @@ if build:
         st.rerun()
     except Exception as e:
         st.sidebar.error(f"Build failed: {e}")
+        st.sidebar.markdown("**Data diagnostics**")
+        st.sidebar.code(diagnose_data_dir(Path('archive')))
 
 # ---------- Main UI ----------
 st.title("Emoji Suggester")

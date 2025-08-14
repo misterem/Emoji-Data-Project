@@ -17,16 +17,35 @@ def load_profiles(path):
 
 def get_profiles(data_dir: Path, n_rows: int = 1000, text_col: str = "text",
                  cache_path: Path | None = None):
-    """
-    Build or load cached emoji profiles.
-    """
+    data_dir = Path(data_dir)
+    if not data_dir.exists():
+        raise FileNotFoundError(f"Data directory not found: {data_dir.resolve()}")
+
+    csvs = sorted(data_dir.glob("*.csv"))
+    if not csvs:
+        raise FileNotFoundError(f"No CSV files found in {data_dir.resolve()}")
+
+    # schema sanity: verify required column on a few files
+    for p in csvs[:3]:
+        try:
+            df_head = pd.read_csv(p, nrows=1)
+        except Exception as e:
+            raise RuntimeError(f"Failed reading {p.name}: {e}")
+        if text_col not in df_head.columns:
+            raise KeyError(
+                f"Required column '{text_col}' missing in {p.name}. "
+                f"Columns: {list(df_head.columns)}"
+            )
+
     if cache_path and cache_path.exists():
         return load_profiles(cache_path)
-    profiles = build_emoji_profiles(Path(data_dir), n_rows, text_col)
+
+    profiles = build_emoji_profiles(data_dir, n_rows, text_col)
     if cache_path:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         save_profiles(profiles, cache_path)
     return profiles
+
 
 def nrc_emotions(text: str):
     e = NRCLex(text or "")
