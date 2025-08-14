@@ -2,9 +2,37 @@
 import streamlit as st
 from pathlib import Path
 import pandas as pd
+import nltk
+import os
 from classification2_streamlit import get_profiles, best_emoji, nrc_emotions
 
+
+@st.cache_resource(show_spinner=True)
+def ensure_nlp_data():
+    data_dir = Path("./nltk_data")
+    data_dir.mkdir(exist_ok=True)
+    os.environ["NLTK_DATA"] = str(data_dir.resolve())
+    if str(data_dir) not in nltk.data.path:
+        nltk.data.path.append(str(data_dir))
+
+    # minimal set NRCLex/TextBlob need
+    needed = {
+        "tokenizers/punkt": "punkt",
+        "corpora/wordnet": "wordnet",
+        "corpora/omw-1.4": "omw-1.4",
+        "taggers/averaged_perceptron_tagger": "averaged_perceptron_tagger",
+        "corpora/stopwords": "stopwords",
+    }
+    for key, pkg in needed.items():
+        try:
+            nltk.data.find(key)
+        except LookupError:
+            nltk.download(pkg, download_dir=str(data_dir), quiet=True)
+    return str(data_dir)
+
+
 # ---------- Config ----------
+ensure_nlp_data()
 st.set_page_config(page_title="Emoji Suggester", layout="centered")
 DATA_DIR = "archive"
 TEXT_COL = "Text"
@@ -30,6 +58,7 @@ build = st.sidebar.button("Build / Update profiles", type="primary", use_contain
 top_k = st.sidebar.slider("How many emojis to return", min_value=1, max_value=10, value=1)
 st.sidebar.caption(f"Active rows: {st.session_state.active_n_rows or '—'}")
 
+
 # ---------- Cached Loader ----------
 @st.cache_resource(show_spinner=True)
 def load_or_build_profiles(_n_rows: int, _cache_path: Path):
@@ -45,8 +74,10 @@ def diagnose_data_dir(dir_path: Path) -> str:
         preview = files[:15]
         lines.extend([f"- {name}" for name in preview])
         if len(files) > len(preview):
-            lines.append(f"... (+{len(files)-len(preview)} more)")
+            lines.append(f"... (+{len(files) - len(preview)} more)")
     return "\n".join(lines)
+
+
 # ---------- Build Trigger ----------
 if build:
     try:

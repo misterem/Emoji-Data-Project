@@ -6,14 +6,30 @@ import pandas as pd
 import emoji
 from nrclex import NRCLex
 import pickle
+import os, nltk
+from pathlib import Path
+
+
+def _prepare_nltk_local():
+    data_dir = Path("./nltk_data")
+    if data_dir.exists():
+        os.environ.setdefault("NLTK_DATA", str(data_dir.resolve()))
+        if str(data_dir) not in nltk.data.path:
+            nltk.data.path.append(str(data_dir))
+
+
+_prepare_nltk_local()
+
 
 def save_profiles(profiles, path):
     with open(path, "wb") as f:
         pickle.dump(profiles, f)
 
+
 def load_profiles(path):
     with open(path, "rb") as f:
         return pickle.load(f)
+
 
 def get_profiles(data_dir: Path, n_rows: int = 1000, text_col: str = "text",
                  cache_path: Path | None = None):
@@ -51,7 +67,8 @@ def nrc_emotions(text: str):
     e = NRCLex(text or "")
     raw = dict(e.raw_emotion_scores)
     freq = dict(e.affect_frequencies)
-    categories = ["anger","anticipation","disgust","fear","joy","sadness","surprise","trust","positive","negative"]
+    categories = ["anger", "anticipation", "disgust", "fear", "joy", "sadness", "surprise", "trust", "positive",
+                  "negative"]
     raw_full = {k: int(raw.get(k, 0)) for k in categories}
     freq_full = {k: float(freq.get(k, 0.0)) for k in categories}
     return {"raw": raw_full, "freq": freq_full}
@@ -143,6 +160,7 @@ def build_emoji_profiles(data_dir: Path, n_rows_per_file: int, text_column: str)
 
     return profiles
 
+
 def _cosine_details(vec_a: np.ndarray, vec_b: np.ndarray):
     dot = float(np.dot(vec_a, vec_b))
     na = float(np.linalg.norm(vec_a) + 1e-12)
@@ -150,6 +168,7 @@ def _cosine_details(vec_a: np.ndarray, vec_b: np.ndarray):
     cos_sim = dot / (na * nb)
     cos_dist = 1.0 - cos_sim
     return {"dot": dot, "norm_a": na, "norm_b": nb, "cos_sim": cos_sim, "cos_dist": cos_dist}
+
 
 # modify best_emoji signature and return when requested
 def best_emoji(user_text: str, profiles, top_k=1, return_details: bool = False):
@@ -164,6 +183,7 @@ def best_emoji(user_text: str, profiles, top_k=1, return_details: bool = False):
             scored.append((score, emj))
     scored.sort(key=lambda x: x["score"] if return_details else x[0], reverse=True)
     return scored[:top_k]
+
 
 # def best_emoji(user_text: str, profiles: dict, top_k: int = 1):
 #     """Return top_k emojis ranked by cosine similarity to user's NRCLex vector."""
