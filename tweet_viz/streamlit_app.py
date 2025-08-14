@@ -1,38 +1,41 @@
 # streamlit_app.py
-import streamlit as st
-from pathlib import Path
-import pandas as pd
-import nltk
 import os
-from classification2_streamlit import get_profiles, best_emoji, nrc_emotions
+from pathlib import Path
+import nltk
 
 
-@st.cache_resource(show_spinner=True)
-def ensure_nlp_data():
+def _ensure_nlp_data():
     data_dir = Path("./nltk_data")
-    data_dir.mkdir(exist_ok=True)
     os.environ["NLTK_DATA"] = str(data_dir.resolve())
+    data_dir.mkdir(exist_ok=True)
     if str(data_dir) not in nltk.data.path:
         nltk.data.path.append(str(data_dir))
 
-    # minimal set NRCLex/TextBlob need
-    needed = {
-        "tokenizers/punkt": "punkt",
-        "corpora/wordnet": "wordnet",
-        "corpora/omw-1.4": "omw-1.4",
-        "taggers/averaged_perceptron_tagger": "averaged_perceptron_tagger",
-        "corpora/stopwords": "stopwords",
-    }
-    for key, pkg in needed.items():
+    # Install both old/new NLTK tagger names + common corpora TextBlob/NRCLex need
+    required = [
+        ("tokenizers/punkt", "punkt"),
+        ("taggers/averaged_perceptron_tagger", "averaged_perceptron_tagger"),
+        ("taggers/averaged_perceptron_tagger_eng", "averaged_perceptron_tagger_eng"),
+        ("corpora/wordnet", "wordnet"),
+        ("corpora/omw-1.4", "omw-1.4"),
+        ("corpora/stopwords", "stopwords"),
+        ("corpora/brown", "brown"),
+        ("corpora/wordlists", "wordlists"),
+        ("corpora/movie_reviews", "movie_reviews"),
+        ("corpora/subjectivity", "subjectivity"),
+    ]
+    for key, pkg in required:
         try:
             nltk.data.find(key)
         except LookupError:
             nltk.download(pkg, download_dir=str(data_dir), quiet=True)
-    return str(data_dir)
 
+_ensure_nlp_data()
+import streamlit as st
+import pandas as pd
+from classification2_streamlit import get_profiles, best_emoji, nrc_emotions
 
 # ---------- Config ----------
-ensure_nlp_data()
 st.set_page_config(page_title="Emoji Suggester", layout="centered")
 DATA_DIR = "archive"
 TEXT_COL = "Text"
