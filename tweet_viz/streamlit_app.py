@@ -7,7 +7,7 @@ from classification2_streamlit import get_profiles, best_emoji, nrc_emotions
 # ---------- Config ----------
 st.set_page_config(page_title="Emoji Suggester", layout="centered")
 DATA_DIR = "archive"
-TEXT_COL = "text"
+TEXT_COL = "Text"
 
 # ---------- Session State ----------
 if "profiles" not in st.session_state:
