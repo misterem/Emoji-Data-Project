@@ -111,7 +111,7 @@ profiles = st.session_state.profiles
 
 if run:
     if profiles is None:
-        st.error("Build profiles first.")
+        st.error("Build profiles in the sidebar first.")
         st.stop()
     try:
         results = best_emoji(user_text, profiles, top_k=top_k, return_details=True)

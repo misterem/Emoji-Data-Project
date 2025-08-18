@@ -116,7 +116,7 @@ def draw_emoji_network(G, k=None, seed=42):
 
     # Node sizes
     node_supports = nx.get_node_attributes(G, "support")
-    sizes = [max(50, 8000 * node_supports[n]) for n in G.nodes()]  # scale
+    sizes = [max(100, 20000 * node_supports[n]) for n in G.nodes()]  # scale
 
     # Edge widths and colors
     esupp = nx.get_edge_attributes(G, "support")
@@ -149,7 +149,7 @@ def draw_emoji_network(G, k=None, seed=42):
         ax.text(
             x, y, node,
             fontproperties=prop,  # emoji-capable font
-            fontsize=9,
+            fontsize=20,
             ha='center', va='center',
             clip_on=True
         )
@@ -163,7 +163,7 @@ def draw_emoji_network(G, k=None, seed=42):
     plt.text(
         0.01, 0.01, legend_text,
         transform=plt.gca().transAxes,
-        fontsize=10,
+        fontsize=20,
         va='center',
         ha='left',
         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", alpha=0.8)

@@ -9,7 +9,6 @@ from matplotlib.font_manager import FontProperties
 from collections import Counter
 from itertools import combinations
 from tqdm import tqdm
-from matplotlib import colors
 import numpy as np
 
 # Get all CSV files
@@ -95,11 +94,6 @@ for (e1, e2), count in pair_counts.items():
 
 # Plot heatmap
 prop = FontProperties(fname='/System/Library/Fonts/Apple Color Emoji.ttc')
-# plt.figure(figsize=(10, 8))
-# sns.heatmap(matrix, cmap="Reds", square=True, linewidths=0.5, vmax=10)
-# plt.title("Emoji Co-occurrence Heatmap")
-# plt.tight_layout()
-# plt.show()
 
 # Get top 20 co-occurrences
 top_pairs = pair_counts.most_common(20)
