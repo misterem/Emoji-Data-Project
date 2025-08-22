@@ -1,4 +1,3 @@
-# pip install pandas mlxtend emoji
 import pandas as pd
 import emoji
 from mlxtend.frequent_patterns import apriori, association_rules
@@ -8,11 +7,8 @@ import matplotlib, mplcairo
 matplotlib.use("module://mplcairo.macosx")
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
-import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
 
 # ---------- 1) Load preprocessed CSV ----------
-# The CSV must have a 'text' column containing the review text (already filtered to include emojis)
 df = pd.read_csv("../movie_data/reddit-amazon-emoji-only.csv")
 
 # ---------- 2) Extract unique emojis from each review ----------
@@ -27,13 +23,12 @@ df["emojis"] = df["text"].apply(extract_emojis)
 df = df[df["emojis"].apply(len) >= 2]
 
 # ---------- 4) One-hot encode ----------
-# Expand to long form and pivot
 exploded = df.explode("emojis")[["emojis"]]
 exploded["val"] = 1
 exploded = exploded.reset_index(names="review_id").drop_duplicates()
 basket = exploded.pivot(index="review_id", columns="emojis", values="val").fillna(0).astype("uint8")
 
-# Optional: drop very rare emojis to speed Apriori
+#drop very rare emojis to speed Apriori
 min_item_support = 0.002
 col_support = basket.mean(axis=0)
 basket = basket.loc[:, col_support[col_support >= min_item_support].index]
@@ -51,7 +46,7 @@ rules = rules.sort_values(["lift", "confidence"], ascending=False).reset_index(d
 freq_itemsets.to_csv("frequent_emoji_itemsets.csv", index=False)
 rules.to_csv("emoji_association_rules.csv", index=False)
 
-# ---------- 8) Example: P(💔 | 😭) ----------
+# ---------- 8) Example ----------
 A = {"😭"}
 B = {"💔"}
 q = rules[(rules["antecedents"] == frozenset(A)) & (rules["consequents"] == frozenset(B))]
@@ -88,7 +83,6 @@ def build_emoji_network(basket, freq_itemsets, top_n=50, min_pair_support=0.0005
     for s, sup in zip(two_item["itemsets"], two_item["support"]):
         a, b = tuple(s)
         if a in keep and b in keep and sup >= min_pair_support:
-            # Lift = P(a∧b) / (P(a)P(b))
             p_a, p_b = supp.get(a, 0.0), supp.get(b, 0.0)
             lift = sup / (p_a * p_b) if p_a > 0 and p_b > 0 else float("nan")
             edges.append((a, b, {"support": sup, "lift": lift}))
@@ -108,8 +102,9 @@ def draw_emoji_network(G, k=None, seed=42):
     prop = FontProperties(fname='/System/Library/Fonts/Apple Color Emoji.ttc')
 
     if k is None:
-        k = 1 / math.sqrt(max(G.number_of_nodes(), 1))  # layout scale heuristic
+        k = 1 / math.sqrt(max(G.number_of_nodes(), 1))
 
+    # three graph display options
     # pos = nx.spring_layout(G, k=k, seed=seed)
     # pos = nx.kamada_kawai_layout(G)
     pos = nx.circular_layout(G)
@@ -121,21 +116,19 @@ def draw_emoji_network(G, k=None, seed=42):
     # Edge widths and colors
     esupp = nx.get_edge_attributes(G, "support")
     elift = nx.get_edge_attributes(G, "lift")
-
-    # widths = [max(0.5, 80 * esupp[e]) for e in G.edges()]
     svals = list(esupp.values())
     min_s, max_s = min(svals), max(svals)
     widths = [
         0.5 + ((esupp[e] - min_s) / (max_s - min_s)) * (8.0 - 0.5)
         for e in G.edges()
     ]
-    # Map lift to grayscale: >1 darker, <1 lighter
+
     def lift_to_gray(l):
         if not math.isfinite(l):
             return (0.8, 0.8, 0.8)
         l_clamped = max(0.5, min(2.0, l))
         shade = 0.8 - (l_clamped - 1.0) * 0.6
-        shade = max(0.1, min(1.0, shade))  # clamp into valid range
+        shade = max(0.1, min(1.0, shade))
         return (shade, shade, shade)
 
     colors = [lift_to_gray(elift[e]) for e in G.edges()]
@@ -143,12 +136,11 @@ def draw_emoji_network(G, k=None, seed=42):
     plt.figure(figsize=(12, 9))
     nx.draw_networkx_nodes(G, pos, node_size=sizes, linewidths=0.8, edgecolors="black")
     nx.draw_networkx_edges(G, pos, width=widths, edge_color=colors)
-    # Here: pass font_properties so emojis render
     ax = plt.gca()
     for node, (x, y) in pos.items():
         ax.text(
             x, y, node,
-            fontproperties=prop,  # emoji-capable font
+            fontproperties=prop,
             fontsize=20,
             ha='center', va='center',
             clip_on=True

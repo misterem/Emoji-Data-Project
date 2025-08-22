@@ -1,6 +1,5 @@
 import argparse
-from pathlib import Path
-from collections import Counter, defaultdict
+from collections import Counter
 import numpy as np
 import pandas as pd
 import emoji
@@ -20,16 +19,13 @@ def _prepare_nltk_local():
 
 _prepare_nltk_local()
 
-
 def save_profiles(profiles, path):
     with open(path, "wb") as f:
         pickle.dump(profiles, f)
 
-
 def load_profiles(path):
     with open(path, "rb") as f:
         return pickle.load(f)
-
 
 def get_profiles(data_dir: Path, n_rows: int = 1000, text_col: str = "text",
                  cache_path: Path | None = None):
@@ -41,7 +37,7 @@ def get_profiles(data_dir: Path, n_rows: int = 1000, text_col: str = "text",
     if not csvs:
         raise FileNotFoundError(f"No CSV files found in {data_dir.resolve()}")
 
-    # schema sanity: verify required column on a few files
+    # verify required column on a few files
     for p in csvs[:3]:
         try:
             df_head = pd.read_csv(p, nrows=1)
@@ -62,7 +58,6 @@ def get_profiles(data_dir: Path, n_rows: int = 1000, text_col: str = "text",
         save_profiles(profiles, cache_path)
     return profiles
 
-
 def nrc_emotions(text: str):
     e = NRCLex(text or "")
     raw = dict(e.raw_emotion_scores)
@@ -77,7 +72,6 @@ def nrc_emotions(text: str):
 # Fixed NRCLex categories (order matters)
 EMO_CATS = ["anger", "anticipation", "disgust", "fear", "joy", "negative", "positive", "sadness", "surprise", "trust"]
 
-
 def _nrc_vector(text: str) -> np.ndarray:
     """Return a fixed-length NRCLex emotion vector in EMO_CATS order."""
     if not isinstance(text, str) or not text:
@@ -85,13 +79,11 @@ def _nrc_vector(text: str) -> np.ndarray:
     s = NRCLex(text).raw_emotion_scores
     return np.array([float(s.get(k, 0.0)) for k in EMO_CATS], dtype=float)
 
-
 def _normalize(v: np.ndarray, eps: float = 1e-12) -> np.ndarray:
     n = np.linalg.norm(v)
     if n < eps:
         return v * 0.0
     return v / n
-
 
 def _cosine(a: np.ndarray, b: np.ndarray, eps: float = 1e-12) -> float:
     na = np.linalg.norm(a)
@@ -100,10 +92,8 @@ def _cosine(a: np.ndarray, b: np.ndarray, eps: float = 1e-12) -> float:
         return 0.0
     return float(np.dot(a, b) / (na * nb))
 
-
 def _extract_emojis(s: str):
     return [c for c in str(s) if c in emoji.EMOJI_DATA]
-
 
 def _infer_file_emoji(stem: str, texts: pd.Series) -> str | None:
     """Try filename alias then fallback to most common emoji in sample texts."""
@@ -115,7 +105,6 @@ def _infer_file_emoji(stem: str, texts: pd.Series) -> str | None:
     for t in texts.dropna().tolist():
         counter.update(_extract_emojis(t))
     return counter.most_common(1)[0][0] if counter else None
-
 
 def build_emoji_profiles(data_dir: Path, n_rows_per_file: int, text_column: str) -> dict:
     """
@@ -160,7 +149,6 @@ def build_emoji_profiles(data_dir: Path, n_rows_per_file: int, text_column: str)
 
     return profiles
 
-
 def _cosine_details(vec_a: np.ndarray, vec_b: np.ndarray):
     dot = float(np.dot(vec_a, vec_b))
     na = float(np.linalg.norm(vec_a) + 1e-12)
@@ -169,32 +157,19 @@ def _cosine_details(vec_a: np.ndarray, vec_b: np.ndarray):
     cos_dist = 1.0 - cos_sim
     return {"dot": dot, "norm_a": na, "norm_b": nb, "cos_sim": cos_sim, "cos_dist": cos_dist}
 
-
 # modify best_emoji signature and return when requested
 def best_emoji(user_text: str, profiles, top_k=1, return_details: bool = False):
     v = _normalize(_nrc_vector(user_text))
     scored = []
     for emj, d in profiles.items():
         details = _cosine_details(v, d["vec"])
-        score = details["cos_sim"]  # keep using cosine similarity to rank
+        score = details["cos_sim"]
         if return_details:
             scored.append({"emoji": emj, "score": score, **details})
         else:
             scored.append((score, emj))
     scored.sort(key=lambda x: x["score"] if return_details else x[0], reverse=True)
     return scored[:top_k]
-
-
-# def best_emoji(user_text: str, profiles: dict, top_k: int = 1):
-#     """Return top_k emojis ranked by cosine similarity to user's NRCLex vector."""
-#     v = _normalize(_nrc_vector(user_text))
-#     scored = []
-#     for emj, d in profiles.items():
-#         s = _cosine(v, d["vec"])
-#         scored.append((s, emj))
-#     scored.sort(reverse=True, key=lambda x: x[0])
-#     return scored[:top_k]
-
 
 def main():
     parser = argparse.ArgumentParser(description="Interactive emoji suggester.")
@@ -209,14 +184,12 @@ def main():
         print("No profiles built. Check data_dir and CSV schema.")
         return
 
-    # REPL: user enters a sentence; program prints the most fitting emoji(s)
     try:
         while True:
             user_in = input().strip()
             if not user_in:
                 break
             results = best_emoji(user_in, profiles, top_k=args.top_k)
-            # Print only emojis, space-separated, highest first
             print(" ".join([emj for _, emj in results]))
     except EOFError:
         pass

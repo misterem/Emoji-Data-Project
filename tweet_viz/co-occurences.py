@@ -15,7 +15,6 @@ import numpy as np
 folder = "../archive"
 files = [f for f in os.listdir(folder) if f.endswith(".csv")]
 
-# Map file names to emojis (assumes file name like loudly_crying_face.csv for 😭)
 emoji_map = {
     "backhand_index_pointing_right": "👉",
     "check_mark": "✔",
@@ -62,8 +61,6 @@ emoji_map = {
     "winking_face": "😉"
 }
 
-
-# Function to extract emojis from text
 def extract_emojis(text):
     return [c for c in text if c in emoji.EMOJI_DATA]
 
@@ -82,7 +79,6 @@ for file in tqdm(files):
             for pair in combinations(sorted(found), 2):
                 pair_counts[pair] += 1
 
-# Get all unique emojis
 unique_emojis = sorted(set([e for pair in pair_counts for e in pair]))
 
 # Build co-occurrence matrix
@@ -90,7 +86,7 @@ matrix = pd.DataFrame(0, index=unique_emojis, columns=unique_emojis)
 
 for (e1, e2), count in pair_counts.items():
     matrix.at[e1, e2] = count
-    matrix.at[e2, e1] = count  # Symmetric
+    matrix.at[e2, e1] = count
 
 # Plot heatmap
 prop = FontProperties(fname='/System/Library/Fonts/Apple Color Emoji.ttc')
@@ -103,9 +99,9 @@ top_emojis = sorted(set(e for pair, _ in top_pairs for e in pair))
 
 # Build reduced matrix
 reduced = matrix.loc[top_emojis, top_emojis]
-
 logged = np.log1p(reduced)
 normed = (logged - logged.min().min()) / (logged.max().max() - logged.min().min())
+
 # Plot
 sns.heatmap(normed, cmap="Reds", square=True, linewidths=0.5, annot=reduced, fmt="d", annot_kws={"size": 4})
 plt.title("Top 20 Emoji Co-occurrence Heatmap")
